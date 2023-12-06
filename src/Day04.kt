@@ -28,7 +28,13 @@ fun parseCard(input: String): Card {
         cardNumbers.count { it == winningNumber }
     }
 
-    return Card(cardNumber.toInt(), winningNumbers, cardNumbers, winnings = cardWinnings, value = 2.0.pow(cardWinnings - 1).toInt())
+    return Card(
+        id = cardNumber.toInt(),
+        winningNumbers = winningNumbers,
+        cardNumbers = cardNumbers,
+        winnings = cardWinnings,
+        value = 2.0.pow(maxOf(0,cardWinnings - 1)).toInt()
+    )
 }
 
 fun getAdditionalCardsValue(card: Card, cards: List<Card>): List<Card> {
@@ -39,7 +45,7 @@ fun getAdditionalCardsValue(card: Card, cards: List<Card>): List<Card> {
     }
 }
 
-fun getAllAdditionalCardsValue(cards: List<Card>, allCards: List<Card>): List<Card> {
+fun getAllAdditionalCardsValue(cards: List<Card>, allCards: List<Card>, id: Int = 0): List<Card> {
     return if (cards.isEmpty()) {
         cards
     } else {
