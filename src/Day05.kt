@@ -4,70 +4,101 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 
 fun main() {
-    fun part1(input: List<String>): Int {
-        return input.size
+    fun part1(input: List<String>): Long {
+        return getDestinationForSeeds(input)
     }
 
-    fun part2(input: List<String>): Int {
-        return input.size
+    fun part2(input: List<String>): Long {
+        return getDestinationForSeedRanges(input)
     }
 
-    val input = readInput("Day05test")
-    parseInput(input)
-//    part1(input).println()
-//    part2(input).println()
+    val input = readInput("Day05")
+    part1(input).println()
+    part2(input).println()
+
 }
 
-fun parseInput(input: List<String>) {
+fun getDestinationForSeedRanges(input: List<String>): Long {
+    val rawSeeds = input[0].split(": ", " ")
+    val seedRanges = rawSeeds.subList(1, rawSeeds.size).map {
+        it.trim().toLong()
+    }.chunked(2).map { it.first() until it.first() + it[1] }
 
-    val maps = mutableListOf<List<Pair<LongRange, LongRange>>>()
+    val maps = parseMaps(input)
+
+    var result: Long = Long.MAX_VALUE
+    runBlocking(Dispatchers.Default) {
+        val results = seedRanges.map { seedRange ->
+            async {
+                var min: Long = Long.MAX_VALUE
+                for (seed in seedRange) {
+                    var current: Long = seed
+                    for (map in maps) {
+                        val selected = map.firstOrNull { current >= it.first.min && current <= it.first.max }
+                        if (selected != null) {
+                            val step = current - selected.first.min
+                            current = selected.second.min + step
+                        }
+                        min = minOf(current, min)
+                    }
+                }
+                min
+            }
+        }.awaitAll()
+        // TODO: Off by one
+        println("Results are $results")
+        result = results.min()
+    }
+    return result
+}
+
+
+data class Range(val min: Long, val max: Long, val step: Long)
+
+fun getDestinationForSeeds(input: List<String>): Long {
+
     val rawSeeds = input[0].split(": ", " ")
     val seeds = rawSeeds.subList(1, rawSeeds.size).map { it.trim().toLong() }
-    println(seeds)
+    val maps = parseMaps(input)
 
-    var tmp = mutableListOf<Pair<LongRange, LongRange>>()
+    return seeds.minOf { seed -> findDestination(seed, maps) }
+}
 
-    for (i in 2 .. input.lastIndex) {
+private fun parseMaps(
+    input: List<String>
+): List<List<Pair<Range, Range>>> {
+    var tmp = mutableListOf<Pair<Range, Range>>()
+    val maps = mutableListOf<List<Pair<Range, Range>>>()
+    for (i in 2..input.lastIndex) {
         if (input[i].isEmpty()) {
-//            println("Empty line")
             continue
         }
 
         if (input[i].endsWith(":")) {
-//            println(tmp)
-//            println("New map ${input[i]}")
             if (tmp.isNotEmpty()) maps.add(tmp.toList())
             tmp = mutableListOf()
             continue
         }
 
         val (destination, source, step) = input[i].split(" ").map { it.trim().toLong() }
-        val destinationRange: LongRange = destination until destination + step
-        val sourceRange: LongRange = source until source + step
+        val destinationRange: Range = Range(destination, destination + step, step)
+        val sourceRange: Range = Range(source, source + step, step)
         tmp.add(sourceRange to destinationRange)
     }
     if (tmp.isNotEmpty()) maps.add(tmp.toList())
-
-    runBlocking {
-        seeds.map { seed ->
-            async(Dispatchers.Default) {
-                findDestination(seed, maps)
-            }
-        }.awaitAll().min().println()
-    }
+    return maps.toList()
 }
 
 private fun findDestination(
     seed: Long,
-    maps: MutableList<List<Pair<LongRange, LongRange>>>,
+    maps: List<List<Pair<Range, Range>>>,
 ): Long {
     var current = seed
-    println("Seed -> $seed")
     maps.forEach { map ->
-        val range = map.firstOrNull { current in it.first }
+        val range = map.firstOrNull { current >= it.first.min && current <= it.first.max }
         if (range != null) {
-            val step = (current - range.first.min())
-            current = range.second.min() + step
+            val step = (current - range.first.min)
+            current = range.second.min + step
         }
     }
     return current
