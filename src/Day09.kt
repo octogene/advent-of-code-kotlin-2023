@@ -3,17 +3,11 @@ fun main() {
         val histories = parseInput(input)
         val steps = mutableListOf<List<Int>>()
         histories.forEach { ints ->
-            val lastValues = mutableListOf<Int>()
+            val lastValues = mutableListOf(ints.last())
             var intermediate = ints
-            lastValues.add(ints.last())
             while (!intermediate.all { it == 0 }) {
-                val current = intermediate.foldIndexed(emptyList<Int>()) { index, acc, i ->
-                    if (index + 1 <= intermediate.lastIndex) {
-                        acc + (intermediate[index + 1] - i)
-                    } else acc
-                }
-                lastValues.add(current.last())
-                intermediate = current
+                intermediate = intermediate.windowed(2).map { it[1] - it[0] }
+                lastValues.add(intermediate.last())
             }
             steps.add(lastValues)
         }
@@ -24,18 +18,12 @@ fun main() {
         val histories = parseInput(input)
         val steps = mutableListOf<List<Int>>()
         histories.forEach { ints ->
-            val firstValues = mutableListOf<Int>()
+            val firstValues = mutableListOf(ints.first())
             var intermediate = ints
-            firstValues.add(ints.first())
             while (!intermediate.all { it == 0 }) {
                 // TODO: Avoid processing full row
-                val current = intermediate.foldIndexed(emptyList<Int>()) { index, acc, i ->
-                    if (index + 1 <= intermediate.lastIndex) {
-                        acc + (intermediate[index + 1] - i)
-                    } else acc
-                }
-                firstValues.add(current.first())
-                intermediate = current
+                intermediate = intermediate.windowed(2).map { it[1] - it[0] }
+                firstValues.add(intermediate.first())
             }
             steps.add(firstValues.reversed())
         }
