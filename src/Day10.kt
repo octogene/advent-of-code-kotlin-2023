@@ -23,7 +23,10 @@ fun main() {
         }.flatten()
 
         val inside =  boundedMap.map { tile ->
-            val intersectionCount = (tile.position.x + 1 ..areaMaxX).count { connectionsByPosition.containsKey(Position(it, tile.position.y)) }
+            val intersectionCount = (tile.position.x + 1 ..areaMaxX).count {
+                var intersection = connectionsByPosition[Position(it, tile.position.y)]
+                intersection!= null && intersection.type !in listOf('-', 'L', 'J')
+            }
             tile to intersectionCount
         }.filter { it.second % 2 != 0 }
 
@@ -33,7 +36,7 @@ fun main() {
 
     }
 
-    val input = readInput("Day10test")
+    val input = readInput("Day10")
     println("== Part 1 ==")
     part1(input).println()
     println("== Part 2 ==")
